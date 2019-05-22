@@ -65,15 +65,15 @@ public class XMLFileUnpackager extends AbstractFileUnpackager {
 		Set<String> invalidColumnHeader = new HashSet<>();
 		Map<String, String> sumCache = new HashMap<>();
 
-		try (final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile, true), StandardCharsets.UTF_8))) {
+		try (final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csvFile,true), StandardCharsets.UTF_8))) {
 			bufferedWriter.write(UnpackagerUtils.createCsvRow(maxColumnCount, "", "CSV export", "", dstVersion));
 			bufferedWriter.newLine();
 			bufferedWriter.write(UnpackagerUtils.createCsvRowForDstColumnNames());
 			bufferedWriter.newLine();
 
-			for (int i = 0; i < rowCount; i++) {
+			for (int i = 0; i < rowCount;) {
 				final List<Map<String, String>> records = this.readRange(i);
-
+			
 				for (Map<String, String> record : records) {
 					Map<DstColumn, String> validRecords = new HashMap<>();
 					String values;
@@ -90,8 +90,18 @@ public class XMLFileUnpackager extends AbstractFileUnpackager {
 						}
 					}
 
-					values = validRecords.get(DstColumn.SUM.getId());
-
+					values = validRecords.get(DstColumn.SUM);
+					
+					int[] intArray = (Arrays.stream(values.split(",")).mapToInt(Integer::parseInt).sorted()).toArray();
+					StringBuilder sortedString = new StringBuilder();
+					for(int k=0 ; k<intArray.length;k++)
+					{
+						sortedString.append(String.valueOf(intArray[k]).trim());
+						sortedString.append(",");
+					}
+					sortedString.substring(0, sortedString.length());
+					values = sortedString.toString();
+					
 					if (Objects.nonNull(values)) {
 						String sum = sumCache.get(values);
 
@@ -99,7 +109,6 @@ public class XMLFileUnpackager extends AbstractFileUnpackager {
 							sum = addValues(values);
 							sumCache.put(values, sum);
 						}
-
 						validRecords.put(DstColumn.SUM, sum);
 					}
 
@@ -113,7 +122,7 @@ public class XMLFileUnpackager extends AbstractFileUnpackager {
 
 					bufferedWriter.write(UnpackagerUtils.createCsvRowWithValueMatchedToColumn(Arrays.asList(DstColumn.values()), validRecords));
 					bufferedWriter.newLine();
-
+					
 					i++;
 				}
 			}
